@@ -1,87 +1,98 @@
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Ionicons } from "@expo/vector-icons";
 
-import React, { useEffect, useState } from "react";
-import { View, Text, Button, ScrollView, StyleSheet } from "react-native";
+import { MQTTProvider } from "./src/context/MQTTContext";
+import { AuthProvider, useAuth } from "./src/context/AuthContext";
 
-import { connectMQTT, publishCommand, disconnectMQTT } from "./src/mqtt/mqttService";
-import { TOPICS } from "./src/mqtt/topics";
+import LoginScreen from "./src/screens/LoginScreen";
+import RegisterScreen from "./src/screens/RegisterScreen";
+import ForgotPasswordScreen from "./src/screens/ForgotPasswordScreen";
 
-export default function App() {
-  const [connected, setConnected] = useState(false);
+import DashboardScreen from "./src/screens/DashboardScreen";
+import HistoryScreen from "./src/screens/HistoryScreen";
+import SettingsScreen from "./src/screens/SettingsScreen";
+import DeviceListScreen from "./src/screens/DeviceListScreen";
+import DeviceDetailScreen from "./src/screens/DeviceDetailScreen";
+import AnalyticsScreen from "./src/screens/AnalyticsScreen";
+import StoreProfileScreen from "./src/screens/StoreProfileScreen";
+import StaffManagementScreen from "./src/screens/StaffManagementScreen";
 
-  const [data, setData] = useState({
-    temp: "--",
-    humidity: "--",
-    lightLevel: "--",
-    motion: "CLEAR",
-    door: "CLOSED",
-    light: "OFF",
-    alarm: "OFF",
-    online: "OFF",
-  });
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
-  useEffect(() => {
-    connectMQTT((topic, value) => {
-      setData((prev) => {
-        if (topic === TOPICS.temp) return { ...prev, temp: value };
-        if (topic === TOPICS.humidity) return { ...prev, humidity: value };
-        if (topic === TOPICS.lightLevel) return { ...prev, lightLevel: value };
-        if (topic === TOPICS.motion) return { ...prev, motion: value };
-        if (topic === TOPICS.doorStatus) return { ...prev, door: value };
-        if (topic === TOPICS.lightStatus) return { ...prev, light: value };
-        if (topic === TOPICS.alarmStatus) return { ...prev, alarm: value };
-        if (topic === TOPICS.online) return { ...prev, online: value };
-        return prev;
-      });
-    }, setConnected);
-
-    return () => disconnectMQTT();
-  }, []);
-
-  const send = (topic, value) => publishCommand(topic, value);
-
+function DashboardStack() {
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>SMART STORE</Text>
-
-      <Text style={styles.connection}>
-        MQTT: {connected ? "CONNECTED" : "DISCONNECTED"}
-      </Text>
-
-      <View style={styles.card}>
-        <Text>Temperature: {data.temp} °C</Text>
-        <Text>Humidity: {data.humidity} %</Text>
-        <Text>Light Sensor: {data.lightLevel}</Text>
-        <Text>Motion: {data.motion}</Text>
-        <Text>ESP32: {data.online}</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.subtitle}>Store Control</Text>
-
-        <Text>Door: {data.door}</Text>
-        <Button title="OPEN DOOR" onPress={() => send(TOPICS.doorCmd, "OPEN")} />
-        <Button title="CLOSE DOOR" onPress={() => send(TOPICS.doorCmd, "CLOSE")} />
-
-        <Text style={{ marginTop: 12 }}>Light: {data.light}</Text>
-        <Button title="LIGHT ON" onPress={() => send(TOPICS.lightCmd, "ON")} />
-        <Button title="LIGHT OFF" onPress={() => send(TOPICS.lightCmd, "OFF")} />
-        <Button title="AUTO LIGHT" onPress={() => send(TOPICS.lightCmd, "AUTO")} />
-
-        <Text style={{ marginTop: 12 }}>Alarm: {data.alarm}</Text>
-        <Button title="ALARM ON" onPress={() => send(TOPICS.alarmCmd, "ON")} />
-        <Button title="ALARM OFF" onPress={() => send(TOPICS.alarmCmd, "OFF")} />
-
-        <Button title="AUTO MODE" onPress={() => send(TOPICS.modeCmd, "AUTO")} />
-        <Button title="MANUAL MODE" onPress={() => send(TOPICS.modeCmd, "MANUAL")} />
-      </View>
-    </ScrollView>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="DashboardMain" component={DashboardScreen} />
+      <Stack.Screen name="DeviceList" component={DeviceListScreen} />
+      <Stack.Screen name="DeviceDetail" component={DeviceDetailScreen} />
+      <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+    </Stack.Navigator>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#101827", padding: 20, paddingTop: 55 },
-  title: { color: "#fff", fontSize: 26, fontWeight: "bold", marginBottom: 12 },
-  connection: { color: "#44d7a8", marginBottom: 20 },
-  card: { backgroundColor: "#1e293b", padding: 18, borderRadius: 12, marginBottom: 16, gap: 8 },
-  subtitle: { color: "#fff", fontWeight: "bold", fontSize: 20, marginBottom: 8 },
-});
+function SettingsStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="SettingsMain" component={SettingsScreen} />
+      <Stack.Screen name="StoreProfile" component={StoreProfileScreen} />
+      <Stack.Screen name="StaffManagement" component={StaffManagementScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarStyle: { backgroundColor: "#1e293b", borderTopWidth: 0, height: 60 },
+        tabBarActiveTintColor: "#44d7a8",
+        tabBarInactiveTintColor: "#64748b",
+        tabBarIcon: ({ color, size }) => {
+          let iconName;
+          if (route.name === "Dashboard") iconName = "grid";
+          else if (route.name === "History") iconName = "list";
+          else if (route.name === "Settings") iconName = "settings";
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="Dashboard" component={DashboardStack} />
+      <Tab.Screen name="History" component={HistoryScreen} />
+      <Tab.Screen name="Settings" component={SettingsStack} />
+    </Tab.Navigator>
+  );
+}
+
+function AppNavigator() {
+  const { user } = useAuth();
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {user ? (
+          <Stack.Screen name="Main" component={MainTabs} />
+        ) : (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <MQTTProvider>
+        <AppNavigator />
+      </MQTTProvider>
+    </AuthProvider>
+  );
+}
